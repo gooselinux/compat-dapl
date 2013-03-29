@@ -1,7 +1,7 @@
 Name: compat-dapl
 Epoch: 1
 Version: 1.2.15
-Release: 2.1%{?dist}
+Release: 2.1%{?dist}.1
 Summary: Library providing access to the DAT 1.2 API
 Group: System Environment/Libraries
 Obsoletes: udapl < 1.3, dapl < 1.2.2, compat-dapl-1.2.5 < 2.1
@@ -10,6 +10,7 @@ Url: http://openfabrics.org/
 Source0: http://www.openfabrics.org/downloads/dapl/%{name}-%{version}.tar.gz
 Patch0: compat-dapl-1.2.15-pipe-leak.patch
 Patch1: compat-dapl-1.2.15-cma-memleak-verbs-CQ-compl-chans-fix.patch
+Patch2: compat-dapl-cleanup-cr-linkings-after-dto-error-on-ep.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
@@ -51,6 +52,7 @@ Useful test suites to validate the dapl library API's and operation.
 %setup -q
 %patch0 -p1 -b .pipe_leak
 %patch1 -p1 -b .mem_leak
+%patch2 -p1 -b .bz673992
 aclocal -I config && libtoolize --force --copy && autoheader && \
     automake --foreign --add-missing --copy && autoconf
 
@@ -98,6 +100,10 @@ rm -rf %{buildroot}
 %{_mandir}/man1/*1.1.gz
 
 %changelog
+* Mon Jan 31 2011 Jay Fenlason <fenlason@redhat.com> 1:1.2.15-2.1.el6.0.1
+- Include compat-dapl-cleanup-cr-linkings-after-dto-error-on-ep.patch
+  Resolves: bz673992
+
 * Mon Aug 01 2010 Jay Fenlason <fenlason@redhat.com> - 1:1.2.15-2.1.el6
 - Include pipe-leak patch to close
   Resolves: rhbz619439 - OFED1.5.1: uDAPL - cma: memory leak of FD's (DB2 pureScale)

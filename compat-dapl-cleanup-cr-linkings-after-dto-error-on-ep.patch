@@ -1,0 +1,45 @@
+diff -ur compat-dapl-1.2.18/dapl/common/dapl_sp_util.c compat-dapl-1.2.19/dapl/common/dapl_sp_util.c
+--- compat-dapl-1.2.18/dapl/common/dapl_sp_util.c	2008-09-24 15:29:18.000000000 -0400
++++ compat-dapl-1.2.19/dapl/common/dapl_sp_util.c	2010-07-30 15:46:47.000000000 -0400
+@@ -290,6 +290,8 @@
+ 
+ 	dapl_os_unlock (&sp_ptr->header.lock);
+ 
++	ep_ptr->cr_ptr = NULL;
++
+ 	/* free memory outside of the lock */
+ 	dapls_cr_free (cr_ptr);
+ 
+--- compat-dapl-1.2.15/dapl/common/dapl_evd_util.c.bz635155	2008-09-24 15:29:20.000000000 -0400
++++ compat-dapl-1.2.15/dapl/common/dapl_evd_util.c	2010-09-20 10:51:35.000000000 -0400
+@@ -1168,19 +1168,15 @@ dapli_evd_cqe_to_event (
+     /*
+      * Most error DTO ops result in disconnecting the EP. See
+      * IBTA Vol 1.1, Chapter 10,Table 68, for expected effect on
+-     * state.
++     * state. The QP going to error state will trigger disconnect
++     * at provider level. QP errors and CM events are independent,
++     * issue CM disconnect and cleanup any pending CR's
+      */
+     if ((dto_status != DAT_DTO_SUCCESS) &&
+         (dto_status != DAT_DTO_ERR_FLUSHED))
+     {
+ 	DAPL_EVD		*evd_ptr;
+ 
+-	/*
+-	 * If we are connected, generate disconnect and generate an
+-	 * event. We may be racing with other disconnect ops, so we
+-	 * need to check. We may also be racing CM connection events,
+-	 * requiring us to check for connection pending states too.
+-	 */
+ 	dapl_os_lock ( &ep_ptr->header.lock );
+ 	if (ep_ptr->param.ep_state == DAT_EP_STATE_CONNECTED ||
+ 	    ep_ptr->param.ep_state == DAT_EP_STATE_ACTIVE_CONNECTION_PENDING ||
+@@ -1197,6 +1193,7 @@ dapli_evd_cqe_to_event (
+ 
+ 	    /* ... and clean up the local side */
+ 	    evd_ptr = (DAPL_EVD *) ep_ptr->param.connect_evd_handle;
++	    dapl_sp_remove_ep(ep_ptr);
+ 	    if (evd_ptr != NULL)
+ 	    {
+ 		dapls_evd_post_connection_event (evd_ptr,
